@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Graph Visualization</title>
+    <title>Visualizador de Dijkstra</title>
     <style>
+        /* Estilo para el contenedor de la red */
         #mynetwork {
             width: 100%;
             height: 600px;
@@ -14,17 +15,20 @@
             margin-top: 20px;
         }
     </style>
+    <!-- Importación de la biblioteca vis.js para la visualización de la red -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css">
 </head>
 <body>
+    <!-- Contenedor para la red -->
     <div id="mynetwork"></div>
     <div class="controls">
-        <button onclick="findShortestPath()">Find Shortest Path from A to G</button>
+        <!-- Botón para encontrar el camino más corto -->
+        <button onclick="findShortestPath()">Encuentra el camino más corto</button>
     </div>
 
     <script>
-        // Data for nodes and edges
+        // Datos para los nodos y aristas
         var nodes = new vis.DataSet([
             {id: 'A', label: 'A'},
             {id: 'B', label: 'B'},
@@ -37,21 +41,21 @@
         ]);
 
         var edges = new vis.DataSet([
-            {from: 'A', to: 'B', label: '2', length: 200},
-            {from: 'A', to: 'F', label: '1', length: 100},
-            {from: 'B', to: 'C', label: '2', length: 200},
-            {from: 'B', to: 'D', label: '2', length: 200},
-            {from: 'B', to: 'E', label: '4', length: 400},
-            {from: 'C', to: 'E', label: '3', length: 300},
-            {from: 'C', to: 'H', label: '1', length: 100},
-            {from: 'D', to: 'E', label: '4', length: 400},
-            {from: 'D', to: 'F', label: '3', length: 300},
-            {from: 'E', to: 'G', label: '7', length: 700},
-            {from: 'F', to: 'G', label: '5', length: 500},
-            {from: 'G', to: 'H', label: '3', length: 300}
+            {id: 'AB', from: 'A', to: 'B', label: '2', length: 200},
+            {id: 'AF', from: 'A', to: 'F', label: '1', length: 100},
+            {id: 'BC', from: 'B', to: 'C', label: '2', length: 200},
+            {id: 'BD', from: 'B', to: 'D', label: '2', length: 200},
+            {id: 'BE', from: 'B', to: 'E', label: '4', length: 400},
+            {id: 'CE', from: 'C', to: 'E', label: '3', length: 300},
+            {id: 'CH', from: 'C', to: 'H', label: '1', length: 100},
+            {id: 'DE', from: 'D', to: 'E', label: '4', length: 400},
+            {id: 'DF', from: 'D', to: 'F', label: '3', length: 300},
+            {id: 'EG', from: 'E', to: 'G', label: '7', length: 700},
+            {id: 'FG', from: 'F', to: 'G', label: '5', length: 500},
+            {id: 'GH', from: 'G', to: 'H', label: '3', length: 300}
         ]);
 
-        // Network configuration
+        // Configuración de la red
         var container = document.getElementById('mynetwork');
         var data = {
             nodes: nodes,
@@ -66,12 +70,13 @@
         };
         var network = new vis.Network(container, data, options);
 
-        // Dijkstra's algorithm function
+        // Función del algoritmo de Dijkstra
         function dijkstra(nodes, edges, startNode, endNode) {
-            var distances = {};
-            var prev = {};
-            var pq = new vis.DataSet();
+            var distances = {}; // Distancias desde el nodo inicial
+            var prev = {}; // Nodo anterior en el camino más corto
+            var pq = new vis.DataSet(); // Cola de prioridad
 
+            // Inicialización de las distancias y la cola de prioridad
             nodes.forEach(function(node) {
                 if (node.id === startNode) {
                     distances[node.id] = 0;
@@ -83,10 +88,12 @@
                 prev[node.id] = null;
             });
 
+            // Algoritmo de Dijkstra
             while (pq.length > 0) {
-                var minNode = pq.min('distance');
+                var minNode = pq.min('distance'); // Nodo con la distancia mínima
                 pq.remove(minNode.id);
 
+                // Si alcanzamos el nodo de destino, reconstruimos el camino
                 if (minNode.id === endNode) {
                     var path = [];
                     var u = endNode;
@@ -99,6 +106,7 @@
                     return {path: path, distance: distances[endNode]};
                 }
 
+                // Actualización de las distancias para los nodos vecinos
                 edges.forEach(function(edge) {
                     if (edge.from === minNode.id || edge.to === minNode.id) {
                         var neighbor = edge.from === minNode.id ? edge.to : edge.from;
@@ -114,9 +122,74 @@
             return {path: [], distance: Infinity};
         }
 
+        // Función para encontrar y resaltar el camino más corto
         function findShortestPath() {
-            var result = dijkstra(nodes, edges, 'A', 'D');
-            alert('Shortest path: ' + result.path.join(' -> ') + '\nDistance: ' + result.distance);
+            var startNode = 'C';
+            var endNode = 'A';
+
+            // Ejecutar el algoritmo de Dijkstra
+            var result = dijkstra(nodes.get(), edges.get(), startNode, endNode);
+
+            // Si no se encuentra un camino
+            if (result.path.length === 0) {
+                alert('No se encontró un camino de ' + startNode + ' a ' + endNode);
+                return;
+            }
+
+            // Resaltar el camino más corto
+            var pathNodes = result.path;
+            var highlightedEdges = [];
+            var allEdges = edges.get();
+            var allNodes = nodes.get();
+
+            // Resetear colores de todas las aristas y nodos
+            allEdges.forEach(function(edge) {
+                edge.color = {color: '#848484'};
+                edges.update(edge);
+            });
+
+            allNodes.forEach(function(node) {
+                node.color = '#848484';
+                nodes.update(node);
+            });
+
+            // Encontrar aristas que están en el camino más corto
+            for (var i = 0; i < pathNodes.length - 1; i++) {
+                var edgeId = findEdgeId(pathNodes[i], pathNodes[i + 1]);
+                if (edgeId !== null) {
+                    highlightedEdges.push(edgeId);
+                }
+            }
+
+            var highlightColor = '#ff0000'; // Color rojo para resaltar
+
+            // Resaltar las aristas del camino más corto
+            highlightedEdges.forEach(function(edgeId) {
+                var edge = edges.get(edgeId);
+                edge.color = {color: highlightColor};
+                edges.update(edge);
+            });
+
+            // Resaltar los nodos del camino más corto
+            pathNodes.forEach(function(nodeId) {
+                var node = nodes.get(nodeId);
+                node.color = highlightColor;
+                nodes.update(node);
+            });
+
+            network.setData({nodes: nodes, edges: edges});
+        }
+
+        // Función auxiliar para encontrar el ID de una arista entre dos nodos
+        function findEdgeId(fromNode, toNode) {
+            var edgesArray = edges.get();
+            for (var i = 0; i < edgesArray.length; i++) {
+                var edge = edgesArray[i];
+                if ((edge.from === fromNode && edge.to === toNode) || (edge.from === toNode && edge.to === fromNode)) {
+                    return edge.id;
+                }
+            }
+            return null;
         }
     </script>
 </body>
