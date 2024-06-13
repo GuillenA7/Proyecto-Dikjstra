@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Visualization</title>
+    <style>
+        #mynetwork {
+            width: 100%;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <div id="mynetwork"></div>
+    <div class="controls">
+        <button onclick="findShortestPath()">Find Shortest Path from A to G</button>
+    </div>
+
+    <script>
+        // Data for nodes and edges
+        var nodes = new vis.DataSet([
+            {id: 'A', label: 'A'},
+            {id: 'B', label: 'B'},
+            {id: 'C', label: 'C'},
+            {id: 'D', label: 'D'},
+            {id: 'E', label: 'E'},
+            {id: 'F', label: 'F'},
+            {id: 'G', label: 'G'},
+            {id: 'H', label: 'H'}
+        ]);
+
+        var edges = new vis.DataSet([
+            {from: 'A', to: 'B', label: '2', length: 200},
+            {from: 'A', to: 'F', label: '1', length: 100},
+            {from: 'B', to: 'C', label: '2', length: 200},
+            {from: 'B', to: 'D', label: '2', length: 200},
+            {from: 'B', to: 'E', label: '4', length: 400},
+            {from: 'C', to: 'E', label: '3', length: 300},
+            {from: 'C', to: 'H', label: '1', length: 100},
+            {from: 'D', to: 'E', label: '4', length: 400},
+            {from: 'D', to: 'F', label: '3', length: 300},
+            {from: 'E', to: 'G', label: '7', length: 700},
+            {from: 'F', to: 'G', label: '5', length: 500},
+            {from: 'G', to: 'H', label: '3', length: 300}
+        ]);
+
+        // Network configuration
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        var options = {
+            edges: {
+                arrows: {
+                    to: { enabled: true }
+                }
+            }
+        };
+        var network = new vis.Network(container, data, options);
+
+        // Dijkstra's algorithm function
+        function dijkstra(nodes, edges, startNode, endNode) {
+            var distances = {};
+            var prev = {};
+            var pq = new vis.DataSet();
+
+            nodes.forEach(function(node) {
+                if (node.id === startNode) {
+                    distances[node.id] = 0;
+                    pq.add({id: node.id, distance: 0});
+                } else {
+                    distances[node.id] = Infinity;
+                    pq.add({id: node.id, distance: Infinity});
+                }
+                prev[node.id] = null;
+            });
+
+            while (pq.length > 0) {
+                var minNode = pq.min('distance');
+                pq.remove(minNode.id);
+
+                if (minNode.id === endNode) {
+                    var path = [];
+                    var u = endNode;
+                    while (prev[u] !== null) {
+                        path.push(u);
+                        u = prev[u];
+                    }
+                    path.push(startNode);
+                    path.reverse();
+                    return {path: path, distance: distances[endNode]};
+                }
+
+                edges.forEach(function(edge) {
+                    if (edge.from === minNode.id || edge.to === minNode.id) {
+                        var neighbor = edge.from === minNode.id ? edge.to : edge.from;
+                        var alt = distances[minNode.id] + parseInt(edge.label);
+                        if (alt < distances[neighbor]) {
+                            distances[neighbor] = alt;
+                            prev[neighbor] = minNode.id;
+                            pq.update({id: neighbor, distance: alt});
+                        }
+                    }
+                });
+            }
+            return {path: [], distance: Infinity};
+        }
+
+        function findShortestPath() {
+            var result = dijkstra(nodes, edges, 'A', 'D');
+            alert('Shortest path: ' + result.path.join(' -> ') + '\nDistance: ' + result.distance);
+        }
+    </script>
+</body>
+</html>
